@@ -2,64 +2,34 @@ resource "aws_instance" "graylog_instance" {
     ami = "ami-03f65b8614a860c29"
     instance_type = "t2.micro"
     vpc_security_group_ids = [aws_security_group.graylog_sg.id]
-    subnet_id = "aws_subnet.graylog_public.id"
+    subnet_id = aws_subnet.graylog_public.id
     key_name = "graylog_key"
-
-    root_block_device {
-      volume_type = "gp3"
-      volume_size = 50
-      delete_on_termination = true
-      
-    }
-
-
 
 
  user_data = <<-EOF
              #!/bin/bash
 
-             export DEBIAN_FRONTEND=noninteractive
-             echo"3 prerequisites for installing graylog"
-              
-             echo "Updating system packages..."
-             apt-get update
-             apt-get install -y apt-transport-https openjdk-8-jre-headless uuid-runtime pwgen
-              
-             # Installing mongodb and it's deps
-             echo "Installing mongodb and it's deps"
-             wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-             echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-             apt-get update
-             apt-get install -y mongodb-org
-             systemctl enable mongod.service
-             systemctl restart mongod
+             sudo apt-get update 
+             sudo apt-get install -y apt-transport-https openjdk-8-jre-headless uuid-runtime pwgen mongodb-server  --force-yes
+             sudo systemctl restart mongodb
+             sudo wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+             sudo echo "deb https://packages.elastic.co/elasticsearch/2.x/debian stable main" | sudo tee -a /etc/apt/sources.list.d/elasticsearch-2.x.list
+             sudo wget https://packages.graylog2.org/repo/packages/graylog-2.2-repository_latest.deb -O /tmp/graylog.deb
+             sudo dpkg --force-all -i /tmp/graylog.deb
 
-             # Install elastic search
-             echo "Installing elastic search...."
-             wget -q https://artifacts.elastic.co/GPG-KEY-elasticsearch -O myKey
-             apt-key add myKey
-             echo "deb https://artifacts.elastic.co/packages/oss-7.x/apt stable main" | tee -a /etc/apt/sources.list.d/elastic-7.x.list
-             apt-get update
-             apt-get install elasticsearch-oss
-             tee -a /etc/elasticsearch/elasticsearch.yml > /dev/null <<EOT
-             cluster.name: graylog
-             action.auto_create_index: false
-             EOT
-              
-             echo "systemctl enable & restart ES"
-             systemctl daemon-reload
-             systemctl enable elasticsearch
-             systemctl restart elasticsearch
+             sudo apt-get update
+             sudo apt-get install -y  elasticsearch  --force-yes
+             sudo sed -i "/cluster.name:/a cluster.name: 'graylog'" /etc/elasticsearch/elasticsearch.yml
+             sudo systemctl daemon-reload
+             sudo systemctl enable elasticsearch.service
+             sudo systemctl restart elasticsearch.service
+             sudo apt-get update
+             sudo apt-get install -y graylog-server --force-yes
 
-             # Setup graylog
-             echo "Install & Setup graylog"
-             wget https://packages.graylog2.org/repo/packages/graylog-4.2-repository_latest.deb
-             dpkg -i graylog-4.2-repository_latest.deb
-             apt-get update
-             apt-get install graylog-server
-              
+             sudo systemctl daemon-reload
+             sudo systemctl enable graylog-server.service
+             sudo systemctl start graylog-server.service
+
              EOF
-
-
 
 }
