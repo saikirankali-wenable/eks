@@ -19,6 +19,12 @@ resource "aws_security_group" "graylog_sg" {
 
     }
     ingress {
+        from_port = 80
+        to_port = 80
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+    ingress {
         from_port = 12201
         to_port = 12201
         protocol = "tcp"
