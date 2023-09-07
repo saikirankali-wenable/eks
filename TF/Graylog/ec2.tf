@@ -1,9 +1,16 @@
 resource "aws_instance" "graylog_instance" {
     ami = "ami-03f65b8614a860c29"
-    instance_type = "t2.micro"
+    instance_type = var.instance
     vpc_security_group_ids = [aws_security_group.graylog_sg.id]
-    subnet_id = aws_subnet.graylog_public.id
+    subnet_id = aws_subnet.graylog_public[*].id
     key_name = "graylog_key"
+    
+
+    root_block_device{
+        volume_type = "gp3"  # additional storage required for storing logs
+        volume_size = 40
+        delete_on_termination = true 
+    }
 
 
  user_data = <<-EOF
