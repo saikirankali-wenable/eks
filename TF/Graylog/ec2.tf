@@ -1,6 +1,6 @@
 resource "aws_instance" "graylog_instance" {
     ami = "ami-03f65b8614a860c29"
-    instance_type = var.instance
+    instance_type = "t2.medium"
     vpc_security_group_ids = [aws_security_group.graylog_sg.id]
     subnet_id = aws_subnet.graylog_public[*].id
     key_name = "graylog_key"
